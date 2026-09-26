@@ -26,6 +26,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { VerifiedBadge } from "@/components/shared/verified-badge";
+import { MediaUploadField } from "@/components/composer/media-upload-field";
 import { initials } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -49,6 +50,7 @@ export function InlineComposer({
   const [content, setContent] = useState("");
   const [activePanel, setActivePanel] = useState<Panel>(null);
   const [mediaUrl, setMediaUrl] = useState("");
+  const [isMediaUploading, setIsMediaUploading] = useState(false);
   const [documentName, setDocumentName] = useState("");
   const [locationLabel, setLocationLabel] = useState("");
   const [hashtags, setHashtags] = useState<string[]>([]);
@@ -90,6 +92,7 @@ export function InlineComposer({
     setContent("");
     setActivePanel(null);
     setMediaUrl("");
+    setIsMediaUploading(false);
     setDocumentName("");
     setLocationLabel("");
     setHashtags([]);
@@ -202,15 +205,40 @@ export function InlineComposer({
       </div>
 
       {activePanel === "PHOTO" && (
-        <Input placeholder={t("photoUrlPlaceholder")} value={mediaUrl} onChange={(e) => setMediaUrl(e.target.value)} />
+        <MediaUploadField
+          kind="PHOTO"
+          label={t("uploadPhotoLabel")}
+          url={mediaUrl}
+          onUploaded={({ url }) => setMediaUrl(url)}
+          onRemove={() => setMediaUrl("")}
+          onUploadingChange={setIsMediaUploading}
+        />
       )}
       {activePanel === "VIDEO" && (
-        <Input placeholder={t("videoUrlPlaceholder")} value={mediaUrl} onChange={(e) => setMediaUrl(e.target.value)} />
+        <MediaUploadField
+          kind="VIDEO"
+          label={t("uploadVideoLabel")}
+          url={mediaUrl}
+          onUploaded={({ url }) => setMediaUrl(url)}
+          onRemove={() => setMediaUrl("")}
+          onUploadingChange={setIsMediaUploading}
+        />
       )}
       {activePanel === "DOCUMENT" && (
-        <div className="grid sm:grid-cols-2 gap-2">
+        <div className="space-y-2">
           <Input placeholder={t("documentNamePlaceholder")} value={documentName} onChange={(e) => setDocumentName(e.target.value)} />
-          <Input placeholder={t("documentUrlPlaceholder")} value={mediaUrl} onChange={(e) => setMediaUrl(e.target.value)} />
+          <MediaUploadField
+            kind="DOCUMENT"
+            label={t("uploadDocumentLabel")}
+            url={mediaUrl}
+            fileName={documentName}
+            onUploaded={({ url, name }) => {
+              setMediaUrl(url);
+              if (!documentName) setDocumentName(name);
+            }}
+            onRemove={() => setMediaUrl("")}
+            onUploadingChange={setIsMediaUploading}
+          />
         </div>
       )}
       {activePanel === "HISTORICAL" && (
@@ -261,7 +289,11 @@ export function InlineComposer({
 
       <div className="flex items-center justify-between gap-2 pt-1 border-t">
         <span className="text-xs text-muted-foreground hidden sm:inline">{t("visibilityPublicNote")}</span>
-        <Button onClick={handlePublish} disabled={isPending || !content.trim()} className="ml-auto shadow-warm-sm">
+        <Button
+          onClick={handlePublish}
+          disabled={isPending || isMediaUploading || !content.trim()}
+          className="ml-auto shadow-warm-sm"
+        >
           <Send className="size-4" />
           {t("publishButton")}
         </Button>

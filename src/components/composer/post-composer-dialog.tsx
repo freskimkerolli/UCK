@@ -15,6 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { useComposer, type ComposerPanel } from "@/components/composer/composer-context";
+import { MediaUploadField } from "@/components/composer/media-upload-field";
 import { createPostAction } from "@/lib/actions/posts";
 import { searchHistoricalMaterialsForPicker } from "@/lib/actions/composer-data";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -59,6 +60,7 @@ export function PostComposerDialog({
   const [content, setContent] = useState("");
   const [activePanel, setActivePanel] = useState<Panel>(null);
   const [mediaUrl, setMediaUrl] = useState("");
+  const [isMediaUploading, setIsMediaUploading] = useState(false);
   const [documentName, setDocumentName] = useState("");
   const [locationLabel, setLocationLabel] = useState("");
   const [hashtagDraft, setHashtagDraft] = useState("");
@@ -72,6 +74,7 @@ export function PostComposerDialog({
     setContent("");
     setActivePanel(null);
     setMediaUrl("");
+    setIsMediaUploading(false);
     setDocumentName("");
     setLocationLabel("");
     setHashtagDraft("");
@@ -210,17 +213,23 @@ export function PostComposerDialog({
             )}
 
             {activePanel === "PHOTO" && (
-              <Input
-                placeholder={t("photoUrlPlaceholderExample")}
-                value={mediaUrl}
-                onChange={(e) => setMediaUrl(e.target.value)}
+              <MediaUploadField
+                kind="PHOTO"
+                label={t("uploadPhotoLabel")}
+                url={mediaUrl}
+                onUploaded={({ url }) => setMediaUrl(url)}
+                onRemove={() => setMediaUrl("")}
+                onUploadingChange={setIsMediaUploading}
               />
             )}
             {activePanel === "VIDEO" && (
-              <Input
-                placeholder={t("videoUrlPlaceholderExample")}
-                value={mediaUrl}
-                onChange={(e) => setMediaUrl(e.target.value)}
+              <MediaUploadField
+                kind="VIDEO"
+                label={t("uploadVideoLabel")}
+                url={mediaUrl}
+                onUploaded={({ url }) => setMediaUrl(url)}
+                onRemove={() => setMediaUrl("")}
+                onUploadingChange={setIsMediaUploading}
               />
             )}
             {activePanel === "DOCUMENT" && (
@@ -230,10 +239,17 @@ export function PostComposerDialog({
                   value={documentName}
                   onChange={(e) => setDocumentName(e.target.value)}
                 />
-                <Input
-                  placeholder={t("documentUrlPlaceholder")}
-                  value={mediaUrl}
-                  onChange={(e) => setMediaUrl(e.target.value)}
+                <MediaUploadField
+                  kind="DOCUMENT"
+                  label={t("uploadDocumentLabel")}
+                  url={mediaUrl}
+                  fileName={documentName}
+                  onUploaded={({ url, name }) => {
+                    setMediaUrl(url);
+                    if (!documentName) setDocumentName(name);
+                  }}
+                  onRemove={() => setMediaUrl("")}
+                  onUploadingChange={setIsMediaUploading}
                 />
               </div>
             )}
@@ -287,7 +303,7 @@ export function PostComposerDialog({
                 <ToolbarButton icon={MapPin} active={activePanel === "LOCATION"} label={t("location")} onClick={() => togglePanel("LOCATION")} />
                 <ToolbarButton icon={Hash} active={activePanel === "HASHTAG"} label={t("hashtag")} onClick={() => togglePanel("HASHTAG")} />
               </div>
-              <Button onClick={handleSubmit} disabled={isPending || !content.trim()}>
+              <Button onClick={handleSubmit} disabled={isPending || isMediaUploading || !content.trim()}>
                 {isPending && <Loader2 className="size-4 animate-spin" />}
                 {tActions("submit")}
               </Button>
