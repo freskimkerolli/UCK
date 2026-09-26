@@ -27,6 +27,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { HashtagText } from "@/components/post/hashtag-text";
+import { VerifiedBadge } from "@/components/shared/verified-badge";
 import { PostMedia } from "@/components/post/post-media";
 import { PostActions } from "@/components/post/post-actions";
 import { CommentSection } from "@/components/post/comment-section";
@@ -104,6 +105,7 @@ export function PostCard({ post, currentUserId, currentUserRole }: PostCardProps
             <Link href={`/profile/${author.username}`} className="font-semibold leading-tight hover:underline">
               {name}
             </Link>
+            {author.role === "ADMIN" && <VerifiedBadge label={t("verifiedBadge")} />}
             <span className="text-sm text-muted-foreground">@{author.username}</span>
           </div>
           <div className="flex items-center gap-1.5 flex-wrap text-xs text-muted-foreground">

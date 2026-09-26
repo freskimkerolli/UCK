@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { useTranslations } from "next-intl";
-import { Bell, MessageCircle, PenSquare, ChevronDown, Settings, LogOut, BadgeCheck, User } from "lucide-react";
+import { Bell, MessageCircle, PenSquare, ChevronDown, Settings, LogOut, User } from "lucide-react";
 import { LogoLockup } from "@/components/brand/logo";
 import { SearchBar } from "@/components/app-shell/search-bar";
 import { ThemeToggle } from "@/components/app-shell/theme-toggle";
@@ -12,6 +12,7 @@ import { useComposer } from "@/components/composer/composer-context";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { VerifiedBadge } from "@/components/shared/verified-badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -100,15 +101,16 @@ export function TopBar({
                 {initials(user.displayName)}
               </AvatarFallback>
             </Avatar>
-            {(user.role === "ADMIN" || user.role === "MODERATOR") && (
-              <span className="absolute -bottom-0.5 -right-0.5 flex size-3.5 items-center justify-center rounded-full bg-primary text-primary-foreground ring-1 ring-background">
-                <BadgeCheck className="size-2.5" />
-              </span>
+            {user.role === "ADMIN" && (
+              <VerifiedBadge
+                label={t("roleAdmin")}
+                className="absolute -bottom-0.5 -right-0.5 size-3.5 ring-1 ring-background"
+              />
             )}
           </div>
           <div className="hidden xl:flex flex-col text-left leading-tight">
             <span className="text-sm font-semibold">{user.displayName}</span>
-            <span className="text-xs text-primary">{roleLabel}</span>
+            {user.role !== "ADMIN" && <span className="text-xs text-primary">{roleLabel}</span>}
           </div>
           <ChevronDown className="hidden xl:inline size-4 text-muted-foreground" />
         </DropdownMenuTrigger>

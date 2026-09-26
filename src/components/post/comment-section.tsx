@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ReportDialog } from "@/components/shared/report-dialog";
+import { VerifiedBadge } from "@/components/shared/verified-badge";
 import { initials, timeAgo } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { AppLocale } from "@/i18n/locales";
@@ -23,6 +24,7 @@ import type { AppLocale } from "@/i18n/locales";
 interface CommentAuthor {
   id: string;
   username: string;
+  role: string;
   profile: { displayName: string; avatarUrl: string } | null;
 }
 interface CommentItem {
@@ -219,6 +221,9 @@ function CommentItemView({
           <Link href={`/profile/${comment.author.username}`} className="text-sm font-semibold hover:underline">
             {name}
           </Link>
+          {comment.author.role === "ADMIN" && (
+            <VerifiedBadge label={t("verifiedBadge")} className="ml-1 -mb-0.5" />
+          )}
           <p className="text-sm whitespace-pre-wrap break-words">{comment.content}</p>
         </div>
         {isPendingReview && (

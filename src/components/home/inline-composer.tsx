@@ -25,6 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { VerifiedBadge } from "@/components/shared/verified-badge";
 import { initials } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -145,8 +146,13 @@ export function InlineComposer({
             <AvatarFallback className="bg-primary/10 text-primary font-semibold">{initials(currentUser.displayName)}</AvatarFallback>
           </Avatar>
           <div>
-            <p className="font-semibold text-sm leading-tight">{currentUser.displayName}</p>
-            <p className="text-xs text-primary">{ROLE_LABEL[currentUser.role] ?? currentUser.role}</p>
+            <p className="font-semibold text-sm leading-tight flex items-center gap-1">
+              {currentUser.displayName}
+              {currentUser.role === "ADMIN" && <VerifiedBadge label={ROLE_LABEL.ADMIN} />}
+            </p>
+            {currentUser.role !== "ADMIN" && (
+              <p className="text-xs text-primary">{ROLE_LABEL[currentUser.role] ?? currentUser.role}</p>
+            )}
           </div>
         </div>
         {communities.length > 0 && (

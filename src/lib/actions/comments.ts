@@ -11,7 +11,7 @@ import { createNotification } from "@/lib/notify";
 import type { ActionResult } from "@/lib/actions/auth";
 
 const COMMENT_INCLUDE = (userId: string) => ({
-  author: { select: { id: true, username: true, profile: true } },
+  author: { select: { id: true, username: true, role: true, profile: true } },
   likes: { where: { userId }, select: { id: true } },
   _count: { select: { likes: true, replies: true } },
 });

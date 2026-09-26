@@ -10,6 +10,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { FollowButton } from "@/components/profile/follow-button";
 import { EditProfileDialog } from "@/components/profile/edit-profile-dialog";
 import { ProfileMoreMenu } from "@/components/profile/profile-more-menu";
+import { VerifiedBadge } from "@/components/shared/verified-badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -79,9 +80,10 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
         <div className="space-y-1.5">
           <div className="flex items-center gap-2">
             <h1 className="text-xl font-semibold">{name}</h1>
-            {(user.role === "ADMIN" || user.role === "MODERATOR") && (
+            {user.role === "ADMIN" && <VerifiedBadge label={t("verifiedBadge")} />}
+            {user.role === "MODERATOR" && (
               <Badge variant="secondary" className="gap-1">
-                <ShieldCheck className="size-3" /> {user.role === "ADMIN" ? t("roleAdmin") : t("roleModerator")}
+                <ShieldCheck className="size-3" /> {t("roleModerator")}
               </Badge>
             )}
           </div>
