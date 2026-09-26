@@ -1,6 +1,9 @@
 // UÇK Connect — Prisma schema
-// SQLite for local/demo use. Enums are emulated as validated Strings because the
-// sqlite connector does not support native enums; string unions live in src/lib/types.ts.
+// PostgreSQL (Prisma Postgres, provisioned via the Vercel Marketplace) —
+// works on Vercel's serverless functions, unlike file-based SQLite which
+// was only viable for local/offline dev. Enums are still emulated as
+// validated Strings (kept from the original SQLite-only setup) so no model
+// changes were needed for the switch; string unions live in src/lib/types.ts.
 // JSON-shaped fields (media arrays, social links, preferences) are stored as
 // stringified JSON and parsed in the app layer for the same reason.
 
@@ -9,7 +12,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
