@@ -1,0 +1,495 @@
+// UÇK Connect — Prisma schema
+// SQLite for local/demo use. Enums are emulated as validated Strings because the
+// sqlite connector does not support native enums; string unions live in src/lib/types.ts.
+// JSON-shaped fields (media arrays, social links, preferences) are stored as
+// stringified JSON and parsed in the app layer for the same reason.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Identity & Auth
+// ─────────────────────────────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  username      String    @unique
+  passwordHash  String
+  emailVerified DateTime?
+  role          String    @default("USER") // USER | MODERATOR | ADMIN
+  status        String    @default("ACTIVE") // ACTIVE | WARNED | SUSPENDED | BLOCKED
+  lastActiveAt  DateTime  @default(now())
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  profile  Profile?
+  settings UserSettings?
+
+  posts        Post[]
+  comments     Comment[]
+  postLikes    PostLike[]
+  commentLikes CommentLike[]
+  savedPosts   SavedPost[]
+
+  following Follow[] @relation("follower")
+  followers Follow[] @relation("following")
+
+  conversationParticipants ConversationParticipant[]
+  sentMessages             Message[]
+
+  notifications          Notification[] @relation("notificationRecipient")
+  triggeredNotifications Notification[] @relation("notificationActor")
+
+  ownedCommunities Community[]
+  communityMembers CommunityMember[]
+
+  contributedMaterials HistoricalMaterial[]
+  createdEvents        Event[]
+
+  reportsFiled              Report[]           @relation("reporter")
+  moderationActionsTaken    ModerationAction[] @relation("moderator")
+  moderationActionsReceived ModerationAction[] @relation("targetUser")
+  moderationLogs            ModerationLog[]
+  appeals                   Appeal[]           @relation("appellant")
+  appealsReviewed           Appeal[]           @relation("appealReviewer")
+
+  blockedByMe BlockedUser[] @relation("blocker")
+  blockedMe   BlockedUser[] @relation("blocked")
+
+  verificationTokens  VerificationToken[]
+  passwordResetTokens PasswordResetToken[]
+
+  @@index([status])
+}
+
+model Profile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  displayName String
+  bio         String   @default("")
+  location    String   @default("")
+  website     String   @default("")
+  socialLinks String   @default("[]") // JSON: {label, url}[]
+  avatarUrl   String   @default("")
+  coverUrl    String   @default("")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model UserSettings {
+  id                      String   @id @default(cuid())
+  userId                  String   @unique
+  user                    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  language                String   @default("sq")
+  theme                   String   @default("system") // light | dark | system
+  profileVisibility       String   @default("PUBLIC") // PUBLIC | FOLLOWERS | PRIVATE
+  emailNotifications      Boolean  @default(true)
+  pushNotifications       Boolean  @default(true)
+  notifyFollow            Boolean  @default(true)
+  notifyLike              Boolean  @default(true)
+  notifyComment           Boolean  @default(true)
+  notifyMention           Boolean  @default(true)
+  notifyMessage           Boolean  @default(true)
+  notifyCommunity         Boolean  @default(true)
+  showSensitiveHistorical Boolean  @default(true)
+  updatedAt               DateTime @updatedAt
+}
+
+model VerificationToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+}
+
+model BlockedUser {
+  id        String   @id @default(cuid())
+  blockerId String
+  blocker   User     @relation("blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blockedId String
+  blocked   User     @relation("blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([blockerId, blockedId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Social graph
+// ─────────────────────────────────────────────────────────────────────────
+
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String
+  follower    User     @relation("follower", fields: [followerId], references: [id], onDelete: Cascade)
+  followingId String
+  following   User     @relation("following", fields: [followingId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@unique([followerId, followingId])
+  @@index([followingId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Posts, comments, reactions
+// ─────────────────────────────────────────────────────────────────────────
+
+model Post {
+  id                   String              @id @default(cuid())
+  authorId             String
+  author               User                @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  content              String
+  mediaUrls            String              @default("[]") // JSON string[]
+  mediaType            String? // PHOTO | VIDEO | DOCUMENT | null
+  documentName         String?
+  locationLabel        String?
+  communityId          String?
+  community            Community?          @relation(fields: [communityId], references: [id], onDelete: SetNull)
+  historicalMaterialId String?
+  historicalMaterial   HistoricalMaterial? @relation(fields: [historicalMaterialId], references: [id], onDelete: SetNull)
+
+  moderationStatus   String  @default("PUBLISHED") // PUBLISHED | PENDING_REVIEW | BLOCKED
+  moderationCategory String  @default("SAFE") // SAFE | REVIEW | ABUSIVE | THREAT | HARASSMENT | HATEFUL | SPAM
+  moderationReason   String?
+
+  isEdited  Boolean  @default(false)
+  isDeleted Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  hashtags      PostHashtag[]
+  comments      Comment[]
+  likes         PostLike[]
+  saves         SavedPost[]
+  reports       Report[]
+  notifications Notification[]
+
+  @@index([authorId])
+  @@index([communityId])
+  @@index([moderationStatus])
+  @@index([createdAt])
+}
+
+model Hashtag {
+  id  String @id @default(cuid())
+  tag String @unique
+
+  posts               PostHashtag[]
+  historicalMaterials HistoricalMaterialTag[]
+}
+
+model PostHashtag {
+  postId    String
+  post      Post    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  hashtagId String
+  hashtag   Hashtag @relation(fields: [hashtagId], references: [id], onDelete: Cascade)
+
+  @@id([postId, hashtagId])
+}
+
+model Comment {
+  id       String    @id @default(cuid())
+  postId   String
+  post     Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId String
+  author   User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parentId String?
+  parent   Comment?  @relation("replies", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  replies  Comment[] @relation("replies")
+
+  content String
+
+  moderationStatus   String  @default("PUBLISHED")
+  moderationCategory String  @default("SAFE")
+  moderationReason   String?
+
+  isEdited  Boolean  @default(false)
+  isDeleted Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  likes         CommentLike[]
+  reports       Report[]
+  notifications Notification[]
+
+  @@index([postId])
+  @@index([parentId])
+}
+
+model PostLike {
+  id        String   @id @default(cuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reaction  String   @default("LIKE")
+  createdAt DateTime @default(now())
+
+  @@unique([postId, userId])
+}
+
+model CommentLike {
+  id        String   @id @default(cuid())
+  commentId String
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([commentId, userId])
+}
+
+model SavedPost {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, postId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Messaging
+// ─────────────────────────────────────────────────────────────────────────
+
+model Conversation {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  participants ConversationParticipant[]
+  messages     Message[]
+}
+
+model ConversationParticipant {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lastReadAt     DateTime     @default(now())
+  isTyping       Boolean      @default(false)
+  typingAt       DateTime?
+
+  @@unique([conversationId, userId])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  content        String       @default("")
+  imageUrl       String?
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Notifications
+// ─────────────────────────────────────────────────────────────────────────
+
+model Notification {
+  id          String     @id @default(cuid())
+  userId      String
+  user        User       @relation("notificationRecipient", fields: [userId], references: [id], onDelete: Cascade)
+  actorId     String?
+  actor       User?      @relation("notificationActor", fields: [actorId], references: [id], onDelete: SetNull)
+  type        String // FOLLOW | LIKE | COMMENT | REPLY | MENTION | MESSAGE | COMMUNITY_ACTIVITY | MODERATION_WARNING
+  postId      String?
+  post        Post?      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  commentId   String?
+  comment     Comment?   @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  communityId String?
+  community   Community? @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  // Locale-independent data needed to render the message at view time (in the
+  // viewer's own locale) — e.g. { "action": "SUSPEND", "reason": "..." } for
+  // MODERATION_WARNING. null for types where the actor relation is enough.
+  paramsJson  String?
+  isRead      Boolean    @default(false)
+  createdAt   DateTime   @default(now())
+
+  @@index([userId, isRead])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Communities
+// ─────────────────────────────────────────────────────────────────────────
+
+model Community {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  description String
+  category    String // RAJONI | ZONA | HISTORIA | NJESITE | FAMILJET | VETERANET | STUDIUESIT | ARKIVISTET
+  coverUrl    String   @default("")
+  logoUrl     String   @default("")
+  rules       String   @default("")
+  createdById String
+  createdBy   User     @relation(fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+
+  members       CommunityMember[]
+  posts         Post[]
+  notifications Notification[]
+
+  @@index([category])
+}
+
+model CommunityMember {
+  id          String    @id @default(cuid())
+  communityId String
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role        String    @default("MEMBER") // MEMBER | MODERATOR | OWNER
+  joinedAt    DateTime  @default(now())
+
+  @@unique([communityId, userId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Historical Archive
+// ─────────────────────────────────────────────────────────────────────────
+
+model HistoricalMaterial {
+  id                 String   @id @default(cuid())
+  title              String
+  description        String
+  type               String // PHOTO | DOCUMENT | VIDEO | TESTIMONY | INTERVIEW | BIOGRAPHY | EVENT_RECORD
+  eventDate          String // free-text historical date, may be partial/approximate
+  location           String
+  source             String
+  author             String
+  contributorId      String
+  contributor        User     @relation(fields: [contributorId], references: [id])
+  mediaUrl           String   @default("")
+  verificationStatus String   @default("UNVERIFIED") // VERIFIED | UNVERIFIED | DISPUTED
+  verificationNote   String   @default("")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  tags   HistoricalMaterialTag[]
+  posts  Post[]
+  events Event[]
+
+  @@index([type])
+  @@index([verificationStatus])
+}
+
+model HistoricalMaterialTag {
+  materialId String
+  material   HistoricalMaterial @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  hashtagId  String
+  hashtag    Hashtag            @relation(fields: [hashtagId], references: [id], onDelete: Cascade)
+
+  @@id([materialId, hashtagId])
+}
+
+model Event {
+  id          String              @id @default(cuid())
+  title       String
+  description String
+  eventDate   String
+  location    String
+  materialId  String?
+  material    HistoricalMaterial? @relation(fields: [materialId], references: [id], onDelete: SetNull)
+  createdById String
+  createdBy   User                @relation(fields: [createdById], references: [id])
+  createdAt   DateTime            @default(now())
+
+  @@index([eventDate])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Trust & Safety
+// ─────────────────────────────────────────────────────────────────────────
+
+model Report {
+  id           String    @id @default(cuid())
+  reporterId   String
+  reporter     User      @relation("reporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  postId       String?
+  post         Post?     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  commentId    String?
+  comment      Comment?  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  reason       String // OFENSE | HARASSMENT | THREAT | HATE_SPEECH | SPAM | MISINFORMATION | IMPERSONATION | OTHER
+  description  String    @default("")
+  status       String    @default("PENDING") // PENDING | REVIEWED | DISMISSED | ACTIONED
+  createdAt    DateTime  @default(now())
+  reviewedAt   DateTime?
+  reviewedById String?
+
+  moderationActions ModerationAction[]
+
+  @@index([status])
+}
+
+model ModerationAction {
+  id              String   @id @default(cuid())
+  moderatorId     String
+  moderator       User     @relation("moderator", fields: [moderatorId], references: [id], onDelete: Cascade)
+  actionType      String // WARN | SUSPEND | BLOCK_USER | UNBLOCK_USER | DELETE_POST | DELETE_COMMENT | RESTORE_CONTENT | DISMISS_REPORT | APPROVE_CONTENT
+  targetUserId    String?
+  targetUser      User?    @relation("targetUser", fields: [targetUserId], references: [id], onDelete: SetNull)
+  targetPostId    String?
+  targetCommentId String?
+  reportId        String?
+  report          Report?  @relation(fields: [reportId], references: [id], onDelete: SetNull)
+  reason          String
+  createdAt       DateTime @default(now())
+}
+
+model ModerationLog {
+  id          String   @id @default(cuid())
+  moderatorId String? // null => automated AI system action
+  moderator   User?    @relation(fields: [moderatorId], references: [id], onDelete: SetNull)
+  action      String
+  targetType  String // POST | COMMENT | USER | REPORT | COMMUNITY | HISTORICAL_MATERIAL
+  targetId    String
+  reason      String
+  createdAt   DateTime @default(now())
+
+  @@index([targetType, targetId])
+}
+
+model Appeal {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation("appellant", fields: [userId], references: [id], onDelete: Cascade)
+  targetType      String // POST | COMMENT
+  targetId        String
+  contentSnapshot String    @default("")
+  reason          String
+  status          String    @default("PENDING") // PENDING | APPROVED | REJECTED
+  createdAt       DateTime  @default(now())
+  reviewedAt      DateTime?
+  reviewedById    String?
+  reviewer        User?     @relation("appealReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewNote      String    @default("")
+
+  @@index([status])
+}

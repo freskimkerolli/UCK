@@ -1,36 +1,62 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# UÇK Connect
 
-## Getting Started
+Platformë sociale moderne e dedikuar historisë, kujtesës, dokumentimit dhe komunitetit rreth
+Ushtrisë Çlirimtare të Kosovës (UÇK). Kombinon një rrjet social, një arkiv historik, komunitete
+tematike, mesazhe private dhe një sistem moderimi AI + njerëzor, ndërtuar mbi Next.js.
 
-First, run the development server:
+> Shih [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) për arkitekturën e plotë, rrjedhat e
+> përdoruesit, skemën e bazës së të dhënave, strukturën e komponentëve dhe rrjedhat e
+> autentikimit/moderimit/adminit.
+
+## Stack
+
+- **Next.js 16** (App Router, Turbopack, Server Actions)
+- **React 19**, **TypeScript**, **Tailwind CSS v4**, **shadcn/ui** (mbi Base UI)
+- **Prisma 7** + **SQLite** (lokale, zero-config — lehtë e zëvendësueshme me Postgres)
+- **Auth.js (NextAuth v5)** me Credentials provider, JWT sessions
+- **next-intl** (shqip si gjuhë parazgjedhur, skeletuar për shtim gjuhësh)
+- **next-themes** (light/dark mode)
+
+## Fillimi i shpejtë
 
 ```bash
+npm install
+npx prisma migrate dev     # krijon dev.db dhe skemën (bëhet automatikisht nga npm install nëse mungon)
+npx tsx prisma/seed.ts     # mbush bazën me të dhëna demo realiste në shqip
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Hap [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Llogari demo
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Të gjitha llogaritë demo përdorin fjalëkalimin **`Demo1234`**:
 
-## Learn More
+| Email | Username | Rol |
+|---|---|---|
+| arben.krasniqi@demo.uckconnect.al | @arben_krasniqi | Admin |
+| fatlinda.hoti@demo.uckconnect.al | @fatlinda_hoti | Moderator |
+| besnik.gashi@demo.uckconnect.al | @besnik_gashi | User (veteran) |
+| drita.morina@demo.uckconnect.al | @drita_morina | User (arkiviste) |
+| valon.krasniqi@demo.uckconnect.al | @valon_krasniqi | User (studiues) |
+| lirie.berisha@demo.uckconnect.al | @lirie_berisha | User (familje dëshmori) |
+| blerim.zeqiri@demo.uckconnect.al | @blerim_zeqiri | User (organizator komuniteti) |
+| adelina.bytyqi@demo.uckconnect.al | @adelina_bytyqi | User (studente) |
 
-To learn more about Next.js, take a look at the following resources:
+Provo `/admin` me llogarinë e Arbenit për të parë raportimet, përmbajtjen e flaguar nga AI, dhe
+apelimin e para-mbushur.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Shënim mbi "dërgimin" e email-eve
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Nuk ka ofrues email të konfiguruar në këtë mjedis. Verifikimi i email-it dhe rivendosja e
+fjalëkalimit funksionojnë plotësisht, por në vend të një email-i real, linku shfaqet direkt në UI
+(`src/lib/mail.ts`) — thjesht zëvendëso atë modul me një ofrues real (Resend, SES, etj.) kur të
+jenë gati kredencialet.
 
-## Deploy on Vercel
+## Skriptet
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `npm run dev` — server zhvillimi (Turbopack)
+- `npm run build` / `npm run start` — build + server prodhimi
+- `npm run lint` — ESLint
+- `npx prisma studio` — UI për të parë/ndryshuar bazën e të dhënave
+- `npx tsx prisma/seed.ts` — rimbush bazën me të dhëna demo (fshin çdo gjë ekzistuese fillimisht)
