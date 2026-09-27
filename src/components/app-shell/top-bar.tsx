@@ -104,7 +104,7 @@ export function TopBar({
             {user.role === "ADMIN" && (
               <VerifiedBadge
                 label={t("roleAdmin")}
-                className="absolute -bottom-0.5 -right-0.5 size-3.5 ring-1 ring-background"
+                className="absolute -bottom-0.5 -right-0.5 size-3.5"
               />
             )}
           </div>
