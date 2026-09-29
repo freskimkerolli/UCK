@@ -1,0 +1,34 @@
+{
+  "expo": {
+    "name": "UÇK Connect",
+    "slug": "uck-connect",
+    "owner": "freskimkerolli",
+    "scheme": "uckconnect",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.uckconnect.app"
+    },
+    "android": {
+      "package": "com.uckconnect.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#FFFFFF",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "6360f662-3132-498c-9483-f7a9d552689f"
+      }
+    }
+  }
+}
