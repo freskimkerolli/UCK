@@ -3,12 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Plus, User } from "lucide-react";
+import { Plus } from "lucide-react";
 import { BOTTOM_NAV_ITEMS } from "@/components/app-shell/nav-items";
 import { useComposer } from "@/components/composer/composer-context";
 import { cn } from "@/lib/utils";
 
-export function BottomNav({ username }: { username: string }) {
+export function BottomNav() {
   const pathname = usePathname();
   const composer = useComposer();
   const t = useTranslations("nav");
@@ -18,7 +18,6 @@ export function BottomNav({ username }: { username: string }) {
     ...BOTTOM_NAV_ITEMS.slice(0, 2),
     { href: "__create__", labelKey: null as string | null, icon: Plus },
     ...BOTTOM_NAV_ITEMS.slice(2),
-    { href: `/profile/${username}`, labelKey: "bottomProfile", icon: User },
   ];
 
   return (

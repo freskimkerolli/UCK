@@ -35,7 +35,7 @@ export function AppShellClient({
           <main className="flex-1 pb-20 lg:pb-8">{children}</main>
         </div>
       </div>
-      <BottomNav username={user.username} />
+      <BottomNav />
       <PostComposerDialog currentUser={user} communities={communities} />
     </ComposerProvider>
   );
