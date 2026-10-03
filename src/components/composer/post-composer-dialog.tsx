@@ -202,7 +202,7 @@ export function PostComposerDialog({
             {hashtags.length > 0 && (
               <div className="flex flex-wrap gap-1.5">
                 {hashtags.map((h) => (
-                  <Badge key={h} variant="secondary" className="gap-1">
+                  <Badge key={h} variant="secondary" className="gap-1 bg-accent/15 text-accent-foreground">
                     #{h}
                     <button type="button" onClick={() => setHashtags((hs) => hs.filter((x) => x !== h))}>
                       <X className="size-3" />
